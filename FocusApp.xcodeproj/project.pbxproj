@@ -13,8 +13,8 @@
 		A1000004 /* AppBlockingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014 /* AppBlockingManager.swift */; };
 		A1000005 /* NFCManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000015 /* NFCManager.swift */; };
 		A1000006 /* BlockingStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000016 /* BlockingStateManager.swift */; };
-		A1000007 /* AppSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000017 /* AppSelectionView.swift */; };
-		A1000008 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000018 /* SettingsView.swift */; };
+		A1000030 /* AppSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000017 /* AppSelectionView.swift */; };
+		A1000031 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000018 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,7 +42,7 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		A1000007 = {
+		A1000040 = {
 			isa = PBXGroup;
 			children = (
 				A1000021 /* FocusApp */,
@@ -134,7 +134,7 @@
 				en,
 				Base,
 			);
-			mainGroup = A1000007;
+			mainGroup = A1000040;
 			productRefGroup = A100000F /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -165,8 +165,8 @@
 				A1000004 /* AppBlockingManager.swift in Sources */,
 				A1000005 /* NFCManager.swift in Sources */,
 				A1000006 /* BlockingStateManager.swift in Sources */,
-				A1000007 /* AppSelectionView.swift in Sources */,
-				A1000008 /* SettingsView.swift in Sources */,
+				A1000030 /* AppSelectionView.swift in Sources */,
+				A1000031 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
