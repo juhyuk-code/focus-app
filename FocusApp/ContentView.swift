@@ -168,7 +168,10 @@ struct ContentView: View {
             let notification = UINotificationFeedbackGenerator()
             notification.notificationOccurred(.success)
 
-            nfcManager.startScanning()
+            // Small delay so haptic completes before NFC dialog appears
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                nfcManager.startScanning()
+            }
         }) {
             VStack(spacing: 16) {
                 // NFC Icon - minimal line art style
