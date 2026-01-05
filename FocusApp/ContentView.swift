@@ -34,6 +34,8 @@ struct ContentView: View {
     @State private var profileToEdit: Profile?
     @State private var showingNewProfile = false
     @State private var editMode: EditMode = .inactive
+    @State private var showingDeleteConfirmation = false
+    @State private var profileToDelete: Profile?
 
     var body: some View {
         ZStack {
@@ -93,6 +95,19 @@ struct ContentView: View {
             if tag != nil && showingNFCScan {
                 // NFC scanned successfully - the modal will handle the callback
             }
+        }
+        .alert("delete profile?", isPresented: $showingDeleteConfirmation) {
+            Button("cancel", role: .cancel) {
+                profileToDelete = nil
+            }
+            Button("delete", role: .destructive) {
+                if let profile = profileToDelete {
+                    profileManager.deleteProfile(profile)
+                }
+                profileToDelete = nil
+            }
+        } message: {
+            Text("all settings for this profile will be permanently lost.")
         }
     }
 
@@ -169,12 +184,11 @@ struct ContentView: View {
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 6, leading: 24, bottom: 6, trailing: 24))
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    if !profile.isDefault {
-                        Button(role: .destructive) {
-                            profileManager.deleteProfile(profile)
-                        } label: {
-                            Label("delete", systemImage: "trash")
-                        }
+                    Button(role: .destructive) {
+                        profileToDelete = profile
+                        showingDeleteConfirmation = true
+                    } label: {
+                        Label("delete", systemImage: "trash")
                     }
 
                     Button {
@@ -413,6 +427,8 @@ struct ProfileEditorView: View {
     let isNew: Bool
 
     @State private var showingAppSelection = false
+    @State private var categoriesExpanded = true
+    @State private var appsExpanded = true
 
     var body: some View {
         NavigationView {
@@ -448,16 +464,20 @@ struct ProfileEditorView: View {
                             IconPicker(selectedIcon: $profile.icon)
                         }
 
-                        // App selection
+                        // Add/Edit apps button
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("apps to block")
+                            Text("blocked items")
                                 .font(TE.font(12, weight: .medium))
                                 .foregroundColor(TE.textSecondary)
 
                             Button(action: { showingAppSelection = true }) {
                                 HStack {
-                                    Text(appSelectionText)
-                                        .font(TE.font(15, weight: .regular))
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(TE.orange)
+
+                                    Text("add or remove apps")
+                                        .font(TE.font(15, weight: .medium))
                                         .foregroundColor(TE.text)
 
                                     Spacer()
@@ -474,6 +494,139 @@ struct ProfileEditorView: View {
                                 )
                             }
                             .buttonStyle(TEButtonStyle())
+                        }
+
+                        // Categories section (expandable)
+                        if !profile.selectedApps.categoryTokens.isEmpty {
+                            VStack(alignment: .leading, spacing: 0) {
+                                Button(action: { withAnimation { categoriesExpanded.toggle() } }) {
+                                    HStack {
+                                        Image(systemName: categoriesExpanded ? "chevron.down" : "chevron.right")
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundColor(TE.textSecondary)
+                                            .frame(width: 20)
+
+                                        Text("categories")
+                                            .font(TE.font(14, weight: .medium))
+                                            .foregroundColor(TE.text)
+
+                                        Spacer()
+
+                                        Text("\(profile.selectedApps.categoryTokens.count)")
+                                            .font(TE.mono(13, weight: .medium))
+                                            .foregroundColor(TE.orange)
+                                    }
+                                    .padding(16)
+                                    .background(TE.surface)
+                                }
+                                .buttonStyle(TEButtonStyle())
+
+                                if categoriesExpanded {
+                                    VStack(spacing: 0) {
+                                        ForEach(Array(profile.selectedApps.categoryTokens), id: \.hashValue) { token in
+                                            HStack {
+                                                Label(token)
+                                                    .labelStyle(.iconOnly)
+                                                    .font(.system(size: 24))
+
+                                                Label(token)
+                                                    .labelStyle(.titleOnly)
+                                                    .font(TE.font(14, weight: .regular))
+                                                    .foregroundColor(TE.text)
+
+                                                Spacer()
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 12)
+                                            .background(TE.background)
+                                        }
+                                    }
+                                }
+                            }
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(TE.border, lineWidth: 1)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                        }
+
+                        // Apps section (expandable)
+                        if !profile.selectedApps.applicationTokens.isEmpty {
+                            VStack(alignment: .leading, spacing: 0) {
+                                Button(action: { withAnimation { appsExpanded.toggle() } }) {
+                                    HStack {
+                                        Image(systemName: appsExpanded ? "chevron.down" : "chevron.right")
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundColor(TE.textSecondary)
+                                            .frame(width: 20)
+
+                                        Text("apps")
+                                            .font(TE.font(14, weight: .medium))
+                                            .foregroundColor(TE.text)
+
+                                        Spacer()
+
+                                        Text("\(profile.selectedApps.applicationTokens.count)")
+                                            .font(TE.mono(13, weight: .medium))
+                                            .foregroundColor(TE.orange)
+                                    }
+                                    .padding(16)
+                                    .background(TE.surface)
+                                }
+                                .buttonStyle(TEButtonStyle())
+
+                                if appsExpanded {
+                                    VStack(spacing: 0) {
+                                        ForEach(Array(profile.selectedApps.applicationTokens), id: \.hashValue) { token in
+                                            HStack {
+                                                Label(token)
+                                                    .labelStyle(.iconOnly)
+                                                    .font(.system(size: 24))
+
+                                                Label(token)
+                                                    .labelStyle(.titleOnly)
+                                                    .font(TE.font(14, weight: .regular))
+                                                    .foregroundColor(TE.text)
+
+                                                Spacer()
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 12)
+                                            .background(TE.background)
+                                        }
+                                    }
+                                }
+                            }
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(TE.border, lineWidth: 1)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                        }
+
+                        // Empty state
+                        if profile.selectedApps.categoryTokens.isEmpty && profile.selectedApps.applicationTokens.isEmpty {
+                            VStack(spacing: 12) {
+                                Image(systemName: "app.badge")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(TE.textSecondary)
+
+                                Text("no apps selected")
+                                    .font(TE.font(14, weight: .regular))
+                                    .foregroundColor(TE.textSecondary)
+
+                                Text("tap 'add or remove apps' to select apps and categories to block")
+                                    .font(TE.font(12, weight: .regular))
+                                    .foregroundColor(TE.textSecondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(32)
+                            .frame(maxWidth: .infinity)
+                            .background(TE.surface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(TE.border, lineWidth: 1)
+                            )
                         }
 
                         Spacer()
@@ -500,12 +653,6 @@ struct ProfileEditorView: View {
             }
             .familyActivityPicker(isPresented: $showingAppSelection, selection: $profile.selectedApps)
         }
-    }
-
-    private var appSelectionText: String {
-        let count = profile.selectedApps.applicationTokens.count +
-                    profile.selectedApps.categoryTokens.count
-        return count == 0 ? "select apps" : "\(count) items selected"
     }
 
     private func saveProfile() {

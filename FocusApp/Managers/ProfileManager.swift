@@ -33,8 +33,6 @@ class ProfileManager: ObservableObject {
     }
 
     func deleteProfile(_ profile: Profile) {
-        // Don't allow deleting default profiles
-        guard !profile.isDefault else { return }
         profiles.removeAll { $0.id == profile.id }
         reorderProfiles()
         saveProfiles()
