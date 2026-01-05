@@ -30,7 +30,6 @@ struct ContentView: View {
 
     @State private var selectedProfile: Profile?
     @State private var showingNFCScan = false
-    @State private var showingProfileEditor = false
     @State private var profileToEdit: Profile?
     @State private var showingNewProfile = false
     @State private var editMode: EditMode = .inactive
@@ -81,11 +80,9 @@ struct ContentView: View {
                 showingNFCScan = false
             }
         }
-        .sheet(isPresented: $showingProfileEditor) {
-            if let profile = profileToEdit {
-                ProfileEditorView(profile: profile, isNew: false)
-                    .environmentObject(profileManager)
-            }
+        .sheet(item: $profileToEdit) { profile in
+            ProfileEditorView(profile: profile, isNew: false)
+                .environmentObject(profileManager)
         }
         .sheet(isPresented: $showingNewProfile) {
             ProfileEditorView(profile: Profile(name: "", order: profileManager.profiles.count), isNew: true)
@@ -193,7 +190,6 @@ struct ContentView: View {
 
                     Button {
                         profileToEdit = profile
-                        showingProfileEditor = true
                     } label: {
                         Label("edit", systemImage: "pencil")
                     }
