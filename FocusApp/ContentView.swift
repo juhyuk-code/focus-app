@@ -1,6 +1,28 @@
 import SwiftUI
 import FamilyControls
 
+// MARK: - Teenage Engineering Design System
+struct TE {
+    // Colors - Clean, minimal palette
+    static let background = Color(hex: "FAFAFA")
+    static let surface = Color.white
+    static let text = Color(hex: "1A1A1A")
+    static let textSecondary = Color(hex: "8A8A8A")
+    static let border = Color(hex: "E5E5E5")
+    static let orange = Color(hex: "FF5C00")  // TE signature orange
+    static let green = Color(hex: "00D26A")
+    static let red = Color(hex: "FF3B30")
+
+    // Typography - Univers-inspired (SF Pro is similar)
+    static func font(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight, design: .default)
+    }
+
+    static func mono(_ size: CGFloat, weight: Font.Weight = .medium) -> Font {
+        .system(size: size, weight: weight, design: .monospaced)
+    }
+}
+
 struct ContentView: View {
     @EnvironmentObject var blockingStateManager: BlockingStateManager
     @EnvironmentObject var appBlockingManager: AppBlockingManager
@@ -8,75 +30,42 @@ struct ContentView: View {
 
     @State private var showingAppSelection = false
     @State private var showingSettings = false
-    @State private var animatePulse = false
-    @State private var animateGlow = false
 
     var body: some View {
         ZStack {
-            // Background Gradient
-            LinearGradient(
-                colors: blockingStateManager.isBlocking
-                    ? [Color(hex: "1a1a2e"), Color(hex: "16213e")]
-                    : [Color(hex: "0f0f1a"), Color(hex: "1a1a2e")],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-
-            // Ambient glow effect
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            (blockingStateManager.isBlocking ? Color.red : Color.cyan).opacity(0.3),
-                            Color.clear
-                        ],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 200
-                    )
-                )
-                .frame(width: 400, height: 400)
-                .offset(y: -100)
-                .blur(radius: 60)
-                .scaleEffect(animateGlow ? 1.2 : 1.0)
-                .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: animateGlow)
+            // Clean background
+            TE.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Header
                 header
-                    .padding(.top, 20)
+                    .padding(.top, 16)
+                    .padding(.horizontal, 24)
 
                 Spacer()
 
-                // Main Status Card
-                statusCard
-                    .padding(.horizontal, 24)
+                // Main Status Display
+                statusDisplay
 
                 Spacer()
 
                 // NFC Button
                 nfcButton
-                    .padding(.vertical, 30)
 
                 Spacer()
 
-                // Stats Row
-                statsRow
+                // Stats Grid
+                statsGrid
                     .padding(.horizontal, 24)
 
-                Spacer()
-
-                // Bottom Buttons
-                bottomButtons
+                // Bottom Action
+                bottomAction
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 30)
+                    .padding(.top, 32)
+                    .padding(.bottom, 40)
             }
         }
-        .preferredColorScheme(.dark)
-        .onAppear {
-            animateGlow = true
-        }
+        .preferredColorScheme(.light)
         .sheet(isPresented: $showingAppSelection) {
             AppSelectionView()
                 .environmentObject(appBlockingManager)
@@ -95,195 +84,164 @@ struct ContentView: View {
 
     // MARK: - Header
     private var header: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("FOCUS")
-                    .font(.system(size: 28, weight: .black, design: .rounded))
-                    .foregroundColor(.white)
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("focus")
+                    .font(TE.font(32, weight: .light))
+                    .foregroundColor(TE.text)
+                    .kerning(-0.5)
 
-                Text("Stay in the zone")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white.opacity(0.5))
+                Text("nfc app blocker")
+                    .font(TE.font(12, weight: .regular))
+                    .foregroundColor(TE.textSecondary)
+                    .kerning(0.5)
             }
 
             Spacer()
 
             Button(action: { showingSettings = true }) {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.white.opacity(0.7))
-                    .padding(12)
-                    .background(Color.white.opacity(0.1))
-                    .clipShape(Circle())
+                Text("settings")
+                    .font(TE.font(13, weight: .medium))
+                    .foregroundColor(TE.textSecondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(TE.border, lineWidth: 1)
+                    )
             }
         }
-        .padding(.horizontal, 24)
     }
 
-    // MARK: - Status Card
-    private var statusCard: some View {
-        VStack(spacing: 20) {
-            // Icon
+    // MARK: - Status Display
+    private var statusDisplay: some View {
+        VStack(spacing: 24) {
+            // Status indicator circle
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: blockingStateManager.isBlocking
-                                ? [Color.red.opacity(0.3), Color.red.opacity(0.1)]
-                                : [Color.cyan.opacity(0.3), Color.cyan.opacity(0.1)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+                    .stroke(TE.border, lineWidth: 1)
+                    .frame(width: 140, height: 140)
+
+                Circle()
+                    .fill(blockingStateManager.isBlocking ? TE.orange : TE.surface)
+                    .frame(width: 120, height: 120)
+                    .overlay(
+                        Circle()
+                            .stroke(blockingStateManager.isBlocking ? TE.orange : TE.border, lineWidth: 1)
                     )
-                    .frame(width: 100, height: 100)
 
-                Image(systemName: blockingStateManager.isBlocking ? "lock.fill" : "lock.open.fill")
-                    .font(.system(size: 40, weight: .semibold))
-                    .foregroundColor(blockingStateManager.isBlocking ? .red : .cyan)
-                    .symbolEffect(.bounce, value: blockingStateManager.isBlocking)
-            }
-
-            // Status Text
-            VStack(spacing: 8) {
-                Text(blockingStateManager.isBlocking ? "FOCUS MODE" : "UNLOCKED")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-
-                Text(blockingStateManager.isBlocking ? "Apps are blocked" : "All apps accessible")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white.opacity(0.5))
-            }
-
-            // Duration (when blocking)
-            if blockingStateManager.isBlocking {
-                HStack(spacing: 6) {
-                    Image(systemName: "clock.fill")
-                        .font(.system(size: 12))
-                    Text(blockingStateManager.formattedBlockingDuration)
-                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                VStack(spacing: 4) {
+                    Text(blockingStateManager.isBlocking ? "on" : "off")
+                        .font(TE.mono(28, weight: .medium))
+                        .foregroundColor(blockingStateManager.isBlocking ? .white : TE.text)
                 }
-                .foregroundColor(.red.opacity(0.8))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color.red.opacity(0.15))
-                .clipShape(Capsule())
+            }
+
+            // Status text
+            VStack(spacing: 8) {
+                Text(blockingStateManager.isBlocking ? "focus mode active" : "apps unlocked")
+                    .font(TE.font(16, weight: .medium))
+                    .foregroundColor(TE.text)
+
+                if blockingStateManager.isBlocking {
+                    Text(blockingStateManager.formattedBlockingDuration)
+                        .font(TE.mono(14, weight: .regular))
+                        .foregroundColor(TE.orange)
+                } else {
+                    Text("tap nfc to block apps")
+                        .font(TE.font(14, weight: .regular))
+                        .foregroundColor(TE.textSecondary)
+                }
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
-        .background(
-            RoundedRectangle(cornerRadius: 32)
-                .fill(Color.white.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 32)
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.2),
-                                    Color.white.opacity(0.05)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                )
-        )
     }
 
     // MARK: - NFC Button
     private var nfcButton: some View {
         Button(action: { nfcManager.startScanning() }) {
-            ZStack {
-                // Outer pulse rings
-                ForEach(0..<3, id: \.self) { i in
+            VStack(spacing: 16) {
+                // NFC Icon - minimal line art style
+                ZStack {
+                    // Outer ring
                     Circle()
-                        .stroke(Color.cyan.opacity(0.3), lineWidth: 2)
-                        .frame(width: 140 + CGFloat(i * 30), height: 140 + CGFloat(i * 30))
-                        .scaleEffect(animatePulse ? 1.2 : 1.0)
-                        .opacity(animatePulse ? 0 : 0.5)
-                        .animation(
-                            .easeOut(duration: 1.5)
-                            .repeatForever(autoreverses: false)
-                            .delay(Double(i) * 0.3),
-                            value: animatePulse
-                        )
+                        .stroke(TE.border, lineWidth: 1)
+                        .frame(width: 100, height: 100)
+
+                    // Inner ring
+                    Circle()
+                        .stroke(TE.text.opacity(0.2), lineWidth: 1)
+                        .frame(width: 70, height: 70)
+
+                    // Center dot
+                    Circle()
+                        .fill(TE.orange)
+                        .frame(width: 40, height: 40)
+
+                    // NFC waves
+                    ForEach(0..<3, id: \.self) { i in
+                        Arc(startAngle: .degrees(-30), endAngle: .degrees(30))
+                            .stroke(TE.text, lineWidth: 1.5)
+                            .frame(width: CGFloat(55 + i * 15), height: CGFloat(55 + i * 15))
+                    }
                 }
 
-                // Main button
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(hex: "00d4ff"), Color(hex: "0099cc")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 120, height: 120)
-                    .shadow(color: Color.cyan.opacity(0.5), radius: 20, x: 0, y: 10)
-
-                VStack(spacing: 6) {
-                    Image(systemName: "wave.3.right")
-                        .font(.system(size: 32, weight: .semibold))
-                        .rotationEffect(.degrees(-45))
-
-                    Text("TAP")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                }
-                .foregroundColor(.white)
+                Text("scan nfc")
+                    .font(TE.font(13, weight: .medium))
+                    .foregroundColor(TE.textSecondary)
             }
         }
-        .buttonStyle(ScaleButtonStyle())
-        .onAppear { animatePulse = true }
+        .buttonStyle(TEButtonStyle())
     }
 
-    // MARK: - Stats Row
-    private var statsRow: some View {
-        HStack(spacing: 16) {
-            StatCard(
-                icon: "app.fill",
-                value: "\(appBlockingManager.selectedApps.applicationTokens.count)",
-                label: "APPS"
+    // MARK: - Stats Grid
+    private var statsGrid: some View {
+        HStack(spacing: 12) {
+            TEStatBox(
+                label: "apps",
+                value: appBlockingManager.selectedApps.applicationTokens.count
             )
 
-            StatCard(
-                icon: "square.grid.2x2.fill",
-                value: "\(appBlockingManager.selectedApps.categoryTokens.count)",
-                label: "CATEGORIES"
+            TEStatBox(
+                label: "categories",
+                value: appBlockingManager.selectedApps.categoryTokens.count
+            )
+
+            TEStatBox(
+                label: "websites",
+                value: appBlockingManager.selectedApps.webDomainTokens.count
             )
         }
     }
 
-    // MARK: - Bottom Buttons
-    private var bottomButtons: some View {
+    // MARK: - Bottom Action
+    private var bottomAction: some View {
         Button(action: { showingAppSelection = true }) {
             HStack {
-                Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 20))
-                Text("Select Apps to Block")
-                    .font(.system(size: 16, weight: .semibold))
+                Text("select apps to block")
+                    .font(TE.font(15, weight: .medium))
+
+                Spacer()
+
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 14, weight: .medium))
             }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 18)
-            .background(
-                LinearGradient(
-                    colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
+            .foregroundColor(TE.text)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(TE.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(TE.border, lineWidth: 1)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: Color(hex: "667eea").opacity(0.4), radius: 15, x: 0, y: 8)
         }
-        .buttonStyle(ScaleButtonStyle())
+        .buttonStyle(TEButtonStyle())
         .disabled(blockingStateManager.isBlocking)
-        .opacity(blockingStateManager.isBlocking ? 0.5 : 1)
+        .opacity(blockingStateManager.isBlocking ? 0.4 : 1)
     }
 
     // MARK: - Actions
     private func toggleBlocking() {
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+        withAnimation(.easeInOut(duration: 0.2)) {
             if blockingStateManager.isBlocking {
                 appBlockingManager.unblockApps()
                 blockingStateManager.setBlocking(false)
@@ -293,51 +251,56 @@ struct ContentView: View {
             }
         }
 
-        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
     }
 }
 
-// MARK: - Stat Card
-struct StatCard: View {
-    let icon: String
-    let value: String
+// MARK: - Arc Shape for NFC waves
+struct Arc: Shape {
+    let startAngle: Angle
+    let endAngle: Angle
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let radius = min(rect.width, rect.height) / 2
+        path.addArc(center: center, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: false)
+        return path
+    }
+}
+
+// MARK: - TE Stat Box
+struct TEStatBox: View {
     let label: String
+    let value: Int
 
     var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(.cyan)
-
-            Text(value)
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+        VStack(spacing: 8) {
+            Text("\(value)")
+                .font(TE.mono(24, weight: .medium))
+                .foregroundColor(TE.text)
 
             Text(label)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(.white.opacity(0.4))
-                .kerning(1)
+                .font(TE.font(11, weight: .regular))
+                .foregroundColor(TE.textSecondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                )
+        .background(TE.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(TE.border, lineWidth: 1)
         )
     }
 }
 
-// MARK: - Scale Button Style
-struct ScaleButtonStyle: ButtonStyle {
+// MARK: - TE Button Style
+struct TEButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.95 : 1)
-            .animation(.easeInOut(duration: 0.2), value: configuration.isPressed)
+            .opacity(configuration.isPressed ? 0.6 : 1)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 

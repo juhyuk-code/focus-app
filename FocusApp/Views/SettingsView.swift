@@ -10,54 +10,50 @@ struct SettingsView: View {
 
     var body: some View {
         ZStack {
-            // Background
-            LinearGradient(
-                colors: [Color(hex: "0f0f1a"), Color(hex: "1a1a2e")],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            // Clean background
+            TE.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Header
                 header
-                    .padding(.top, 20)
-                    .padding(.bottom, 30)
+                    .padding(.top, 16)
+                    .padding(.horizontal, 24)
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 20) {
+                    VStack(spacing: 24) {
                         // Status Section
                         statusSection
 
-                        // Blocked Content Section
-                        blockedContentSection
+                        // Stats Section
+                        statsSection
 
-                        // Quick Actions
-                        quickActionsSection
+                        // Actions Section
+                        actionsSection
 
-                        // Danger Zone
-                        dangerZoneSection
+                        // Reset Section
+                        resetSection
 
-                        // About Section
-                        aboutSection
+                        // Info Section
+                        infoSection
                     }
                     .padding(.horizontal, 24)
+                    .padding(.top, 32)
                     .padding(.bottom, 40)
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
         .confirmationDialog(
-            "Reset Everything?",
+            "reset everything?",
             isPresented: $showingResetConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Reset", role: .destructive) {
+            Button("reset", role: .destructive) {
                 resetAllSettings()
             }
-            Button("Cancel", role: .cancel) {}
+            Button("cancel", role: .cancel) {}
         } message: {
-            Text("This will clear all selected apps and unblock everything.")
+            Text("this will clear all selected apps and unblock everything.")
         }
     }
 
@@ -65,188 +61,167 @@ struct SettingsView: View {
     private var header: some View {
         HStack {
             Button(action: { dismiss() }) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.7))
-                    .padding(10)
-                    .background(Color.white.opacity(0.1))
-                    .clipShape(Circle())
+                Text("close")
+                    .font(TE.font(14, weight: .medium))
+                    .foregroundColor(TE.textSecondary)
             }
 
             Spacer()
 
-            Text("SETTINGS")
-                .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundColor(.white.opacity(0.7))
-                .kerning(2)
+            Text("settings")
+                .font(TE.font(14, weight: .medium))
+                .foregroundColor(TE.text)
 
             Spacer()
 
-            // Invisible spacer for balance
-            Circle()
-                .fill(Color.clear)
-                .frame(width: 36, height: 36)
+            // Balance spacer
+            Text("close")
+                .font(TE.font(14, weight: .medium))
+                .foregroundColor(.clear)
         }
-        .padding(.horizontal, 24)
     }
 
     // MARK: - Status Section
     private var statusSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(title: "STATUS", icon: "chart.bar.fill")
+        VStack(alignment: .leading, spacing: 12) {
+            Text("status")
+                .font(TE.font(12, weight: .medium))
+                .foregroundColor(TE.textSecondary)
+                .kerning(0.5)
 
-            VStack(spacing: 12) {
-                SettingsRow(
-                    icon: "lock.fill",
-                    iconColor: blockingStateManager.isBlocking ? .red : .green,
-                    title: "Focus Mode",
-                    value: blockingStateManager.isBlocking ? "Active" : "Inactive",
-                    valueColor: blockingStateManager.isBlocking ? .red : .green
+            VStack(spacing: 0) {
+                TESettingsRow(
+                    label: "focus mode",
+                    value: blockingStateManager.isBlocking ? "on" : "off",
+                    valueColor: blockingStateManager.isBlocking ? TE.orange : TE.green,
+                    showIndicator: true,
+                    indicatorColor: blockingStateManager.isBlocking ? TE.orange : TE.green
                 )
 
                 if blockingStateManager.isBlocking {
-                    SettingsRow(
-                        icon: "clock.fill",
-                        iconColor: .orange,
-                        title: "Duration",
+                    Rectangle().fill(TE.border).frame(height: 1)
+
+                    TESettingsRow(
+                        label: "duration",
                         value: blockingStateManager.formattedBlockingDuration,
-                        valueColor: .orange
+                        valueColor: TE.orange
                     )
                 }
 
-                SettingsRow(
-                    icon: "arrow.triangle.2.circlepath",
-                    iconColor: .cyan,
-                    title: "Last Toggle",
+                Rectangle().fill(TE.border).frame(height: 1)
+
+                TESettingsRow(
+                    label: "last toggle",
                     value: blockingStateManager.lastToggleFormatted,
-                    valueColor: .white.opacity(0.6)
+                    valueColor: TE.textSecondary
                 )
             }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white.opacity(0.05))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                    )
+            .background(TE.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(TE.border, lineWidth: 1)
             )
         }
     }
 
-    // MARK: - Blocked Content Section
-    private var blockedContentSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(title: "BLOCKED CONTENT", icon: "square.stack.fill")
+    // MARK: - Stats Section
+    private var statsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("blocked content")
+                .font(TE.font(12, weight: .medium))
+                .foregroundColor(TE.textSecondary)
+                .kerning(0.5)
 
-            HStack(spacing: 12) {
-                MiniStatCard(
+            HStack(spacing: 1) {
+                TEMiniStat(
                     value: appBlockingManager.selectedApps.applicationTokens.count,
-                    label: "Apps",
-                    icon: "app.fill",
-                    color: .cyan
+                    label: "apps"
                 )
 
-                MiniStatCard(
+                Rectangle().fill(TE.border).frame(width: 1)
+
+                TEMiniStat(
                     value: appBlockingManager.selectedApps.categoryTokens.count,
-                    label: "Categories",
-                    icon: "square.grid.2x2.fill",
-                    color: Color(hex: "667eea")
+                    label: "categories"
                 )
 
-                MiniStatCard(
+                Rectangle().fill(TE.border).frame(width: 1)
+
+                TEMiniStat(
                     value: appBlockingManager.selectedApps.webDomainTokens.count,
-                    label: "Sites",
-                    icon: "globe",
-                    color: .orange
+                    label: "websites"
                 )
             }
+            .background(TE.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(TE.border, lineWidth: 1)
+            )
         }
     }
 
-    // MARK: - Quick Actions Section
-    private var quickActionsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(title: "QUICK ACTIONS", icon: "bolt.fill")
+    // MARK: - Actions Section
+    private var actionsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("actions")
+                .font(TE.font(12, weight: .medium))
+                .foregroundColor(TE.textSecondary)
+                .kerning(0.5)
 
-            VStack(spacing: 10) {
-                ActionButton(
-                    icon: "hourglass",
-                    title: "Screen Time Settings",
-                    subtitle: "Open system settings",
-                    color: Color(hex: "667eea")
-                ) {
-                    openScreenTimeSettings()
-                }
-
-                ActionButton(
-                    icon: "checkmark.shield.fill",
-                    title: "Re-authorize",
-                    subtitle: "Refresh permissions",
-                    color: .green
-                ) {
-                    requestAuthorization()
-                }
+            VStack(spacing: 8) {
+                TEActionRow(label: "screen time settings", action: openScreenTimeSettings)
+                TEActionRow(label: "re-authorize permissions", action: requestAuthorization)
             }
         }
     }
 
-    // MARK: - Danger Zone Section
-    private var dangerZoneSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(title: "DANGER ZONE", icon: "exclamationmark.triangle.fill", color: .red)
+    // MARK: - Reset Section
+    private var resetSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("danger zone")
+                .font(TE.font(12, weight: .medium))
+                .foregroundColor(TE.red.opacity(0.8))
+                .kerning(0.5)
 
             Button(action: { showingResetConfirmation = true }) {
                 HStack {
-                    Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 18))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Reset All Settings")
-                            .font(.system(size: 15, weight: .semibold))
-                        Text("Clear selection and unblock all")
-                            .font(.system(size: 12))
-                            .foregroundColor(.red.opacity(0.6))
-                    }
+                    Text("reset all settings")
+                        .font(TE.font(14, weight: .medium))
                     Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.red.opacity(0.5))
+                    Text("×")
+                        .font(TE.font(18, weight: .light))
                 }
-                .foregroundColor(.red)
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.red.opacity(0.1))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.red.opacity(0.2), lineWidth: 1)
-                        )
+                .foregroundColor(TE.red)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(TE.red.opacity(0.3), lineWidth: 1)
                 )
             }
-            .buttonStyle(ScaleButtonStyle())
+            .buttonStyle(TEButtonStyle())
         }
     }
 
-    // MARK: - About Section
-    private var aboutSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(title: "ABOUT", icon: "info.circle.fill")
+    // MARK: - Info Section
+    private var infoSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("about")
+                .font(TE.font(12, weight: .medium))
+                .foregroundColor(TE.textSecondary)
+                .kerning(0.5)
 
             VStack(spacing: 0) {
-                AboutRow(title: "Version", value: "1.0.0")
-                Divider().background(Color.white.opacity(0.1))
-                AboutRow(title: "Build", value: "1")
-                Divider().background(Color.white.opacity(0.1))
-                AboutRow(title: "NFC Status", value: "Ready", valueColor: .green)
+                TEInfoRow(label: "version", value: "1.0.0")
+                Rectangle().fill(TE.border).frame(height: 1)
+                TEInfoRow(label: "build", value: "1")
+                Rectangle().fill(TE.border).frame(height: 1)
+                TEInfoRow(label: "nfc", value: "ready", valueColor: TE.green)
             }
-            .padding(4)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white.opacity(0.05))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                    )
+            .background(TE.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(TE.border, lineWidth: 1)
             )
         }
     }
@@ -274,146 +249,103 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - Section Header
-struct SectionHeader: View {
-    let title: String
-    let icon: String
-    var color: Color = .white
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 12))
-                .foregroundColor(color.opacity(0.6))
-            Text(title)
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(color.opacity(0.6))
-                .kerning(1.5)
-        }
-    }
-}
-
-// MARK: - Settings Row
-struct SettingsRow: View {
-    let icon: String
-    let iconColor: Color
-    let title: String
+// MARK: - TE Settings Row
+struct TESettingsRow: View {
+    let label: String
     let value: String
-    var valueColor: Color = .white
+    var valueColor: Color = TE.text
+    var showIndicator: Bool = false
+    var indicatorColor: Color = TE.orange
 
     var body: some View {
         HStack {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(iconColor)
-                .frame(width: 24)
+            if showIndicator {
+                Circle()
+                    .fill(indicatorColor)
+                    .frame(width: 6, height: 6)
+            }
 
-            Text(title)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.white.opacity(0.8))
+            Text(label)
+                .font(TE.font(14, weight: .regular))
+                .foregroundColor(TE.text)
 
             Spacer()
 
             Text(value)
-                .font(.system(size: 14, weight: .semibold))
+                .font(TE.mono(14, weight: .medium))
                 .foregroundColor(valueColor)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
 }
 
-// MARK: - Mini Stat Card
-struct MiniStatCard: View {
+// MARK: - TE Mini Stat
+struct TEMiniStat: View {
     let value: Int
     let label: String
-    let icon: String
-    let color: Color
 
     var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(color)
-
+        VStack(spacing: 4) {
             Text("\(value)")
-                .font(.system(size: 22, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+                .font(TE.mono(20, weight: .medium))
+                .foregroundColor(TE.text)
 
             Text(label)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.white.opacity(0.4))
+                .font(TE.font(10, weight: .regular))
+                .foregroundColor(TE.textSecondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color.white.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                )
-        )
     }
 }
 
-// MARK: - Action Button
-struct ActionButton: View {
-    let icon: String
-    let title: String
-    let subtitle: String
-    let color: Color
+// MARK: - TE Action Row
+struct TEActionRow: View {
+    let label: String
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack {
-                Image(systemName: icon)
-                    .font(.system(size: 18))
-                    .foregroundColor(color)
-                    .frame(width: 24)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.white)
-                    Text(subtitle)
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.4))
-                }
+                Text(label)
+                    .font(TE.font(14, weight: .medium))
+                    .foregroundColor(TE.text)
 
                 Spacer()
 
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.3))
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(TE.textSecondary)
             }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white.opacity(0.05))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                    )
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(TE.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(TE.border, lineWidth: 1)
             )
         }
-        .buttonStyle(ScaleButtonStyle())
+        .buttonStyle(TEButtonStyle())
     }
 }
 
-// MARK: - About Row
-struct AboutRow: View {
-    let title: String
+// MARK: - TE Info Row
+struct TEInfoRow: View {
+    let label: String
     let value: String
-    var valueColor: Color = .white.opacity(0.6)
+    var valueColor: Color = TE.textSecondary
 
     var body: some View {
         HStack {
-            Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.white.opacity(0.6))
+            Text(label)
+                .font(TE.font(13, weight: .regular))
+                .foregroundColor(TE.textSecondary)
+
             Spacer()
+
             Text(value)
-                .font(.system(size: 14, weight: .semibold))
+                .font(TE.mono(13, weight: .medium))
                 .foregroundColor(valueColor)
         }
         .padding(.horizontal, 16)

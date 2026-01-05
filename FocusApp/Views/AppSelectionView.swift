@@ -9,40 +9,41 @@ struct AppSelectionView: View {
 
     var body: some View {
         ZStack {
-            // Background
-            LinearGradient(
-                colors: [Color(hex: "0f0f1a"), Color(hex: "1a1a2e")],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            // Clean background
+            TE.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Custom Header
+                // Header
                 header
-                    .padding(.top, 20)
-                    .padding(.bottom, 30)
+                    .padding(.top, 16)
+                    .padding(.horizontal, 24)
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 24) {
-                        // Hero Section
-                        heroSection
+                    VStack(spacing: 32) {
+                        // Title Section
+                        titleSection
+                            .padding(.top, 40)
 
-                        // Selection Summary
-                        selectionSummary
+                        // Stats Grid
+                        statsSection
 
-                        // Action Buttons
-                        actionButtons
+                        // Action Button
+                        actionSection
 
-                        // Info Section
-                        infoSection
+                        // Instructions
+                        instructionsSection
+
+                        // Clear Button
+                        if appBlockingManager.hasSelectedApps {
+                            clearSection
+                        }
                     }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 40)
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
         .familyActivityPicker(
             isPresented: $isPickerPresented,
             selection: $appBlockingManager.selectedApps
@@ -56,20 +57,16 @@ struct AppSelectionView: View {
     private var header: some View {
         HStack {
             Button(action: { dismiss() }) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.7))
-                    .padding(10)
-                    .background(Color.white.opacity(0.1))
-                    .clipShape(Circle())
+                Text("cancel")
+                    .font(TE.font(14, weight: .medium))
+                    .foregroundColor(TE.textSecondary)
             }
 
             Spacer()
 
-            Text("SELECT APPS")
-                .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundColor(.white.opacity(0.7))
-                .kerning(2)
+            Text("select apps")
+                .font(TE.font(14, weight: .medium))
+                .foregroundColor(TE.text)
 
             Spacer()
 
@@ -77,197 +74,177 @@ struct AppSelectionView: View {
                 appBlockingManager.saveSelectedApps()
                 dismiss()
             }) {
-                Text("Done")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.cyan)
+                Text("done")
+                    .font(TE.font(14, weight: .medium))
+                    .foregroundColor(TE.orange)
             }
         }
-        .padding(.horizontal, 24)
     }
 
-    // MARK: - Hero Section
-    private var heroSection: some View {
-        VStack(spacing: 16) {
+    // MARK: - Title Section
+    private var titleSection: some View {
+        VStack(spacing: 12) {
+            // Simple icon
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(hex: "667eea").opacity(0.3), Color(hex: "764ba2").opacity(0.1)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 100, height: 100)
+                    .stroke(TE.border, lineWidth: 1)
+                    .frame(width: 80, height: 80)
 
-                Image(systemName: "apps.iphone")
-                    .font(.system(size: 40, weight: .semibold))
-                    .foregroundColor(Color(hex: "667eea"))
+                Rectangle()
+                    .fill(TE.text)
+                    .frame(width: 24, height: 24)
+                    .cornerRadius(6)
             }
 
-            VStack(spacing: 8) {
-                Text("Choose Your Blocklist")
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+            VStack(spacing: 6) {
+                Text("blocklist")
+                    .font(TE.font(24, weight: .light))
+                    .foregroundColor(TE.text)
 
-                Text("Select apps that will be blocked\nwhen Focus mode is active")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white.opacity(0.5))
+                Text("choose apps to block during focus mode")
+                    .font(TE.font(13, weight: .regular))
+                    .foregroundColor(TE.textSecondary)
                     .multilineTextAlignment(.center)
             }
         }
-        .padding(.top, 20)
     }
 
-    // MARK: - Selection Summary
-    private var selectionSummary: some View {
-        HStack(spacing: 12) {
-            SelectionStatBox(
-                value: appBlockingManager.selectedApps.applicationTokens.count,
-                label: "APPS",
-                color: Color.cyan
-            )
+    // MARK: - Stats Section
+    private var statsSection: some View {
+        HStack(spacing: 1) {
+            TESelectionStat(value: appBlockingManager.selectedApps.applicationTokens.count, label: "apps")
 
-            SelectionStatBox(
-                value: appBlockingManager.selectedApps.categoryTokens.count,
-                label: "CATEGORIES",
-                color: Color(hex: "667eea")
-            )
+            Rectangle()
+                .fill(TE.border)
+                .frame(width: 1)
 
-            SelectionStatBox(
-                value: appBlockingManager.selectedApps.webDomainTokens.count,
-                label: "WEBSITES",
-                color: Color.orange
+            TESelectionStat(value: appBlockingManager.selectedApps.categoryTokens.count, label: "categories")
+
+            Rectangle()
+                .fill(TE.border)
+                .frame(width: 1)
+
+            TESelectionStat(value: appBlockingManager.selectedApps.webDomainTokens.count, label: "websites")
+        }
+        .background(TE.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(TE.border, lineWidth: 1)
+        )
+    }
+
+    // MARK: - Action Section
+    private var actionSection: some View {
+        Button(action: { isPickerPresented = true }) {
+            HStack {
+                Circle()
+                    .fill(TE.orange)
+                    .frame(width: 8, height: 8)
+
+                Text("choose apps & categories")
+                    .font(TE.font(15, weight: .medium))
+
+                Spacer()
+
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .foregroundColor(TE.text)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 18)
+            .background(TE.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(TE.border, lineWidth: 1)
             )
         }
+        .buttonStyle(TEButtonStyle())
     }
 
-    // MARK: - Action Buttons
-    private var actionButtons: some View {
-        VStack(spacing: 12) {
-            // Choose Apps Button
-            Button(action: { isPickerPresented = true }) {
-                HStack {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 20))
-                    Text("Choose Apps & Categories")
-                        .font(.system(size: 16, weight: .semibold))
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 18)
-                .background(
-                    LinearGradient(
-                        colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .shadow(color: Color(hex: "667eea").opacity(0.4), radius: 15, x: 0, y: 8)
-            }
-            .buttonStyle(ScaleButtonStyle())
-
-            // Clear Selection Button
-            if appBlockingManager.hasSelectedApps {
-                Button(action: { appBlockingManager.clearSelection() }) {
-                    HStack {
-                        Image(systemName: "trash.fill")
-                            .font(.system(size: 16))
-                        Text("Clear Selection")
-                            .font(.system(size: 14, weight: .semibold))
-                    }
-                    .foregroundColor(.red.opacity(0.8))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.red.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.red.opacity(0.3), lineWidth: 1)
-                    )
-                }
-                .buttonStyle(ScaleButtonStyle())
-            }
-        }
-    }
-
-    // MARK: - Info Section
-    private var infoSection: some View {
+    // MARK: - Instructions Section
+    private var instructionsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 8) {
-                Image(systemName: "lightbulb.fill")
-                    .foregroundColor(.yellow)
-                Text("How it works")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-            }
+            Text("how it works")
+                .font(TE.font(12, weight: .medium))
+                .foregroundColor(TE.textSecondary)
+                .kerning(0.5)
 
             VStack(alignment: .leading, spacing: 12) {
-                StepRow(number: 1, text: "Select apps and categories to block")
-                StepRow(number: 2, text: "Tap your NFC chip to activate")
-                StepRow(number: 3, text: "Tap again to unblock")
+                TEStepRow(number: 1, text: "select apps and categories")
+                TEStepRow(number: 2, text: "tap nfc chip to activate blocking")
+                TEStepRow(number: 3, text: "tap again to unblock")
             }
         }
-        .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                )
+        .padding(20)
+        .background(TE.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(TE.border, lineWidth: 1)
         )
+    }
+
+    // MARK: - Clear Section
+    private var clearSection: some View {
+        Button(action: { appBlockingManager.clearSelection() }) {
+            HStack {
+                Text("clear selection")
+                    .font(TE.font(14, weight: .medium))
+                Spacer()
+                Text("×")
+                    .font(TE.font(18, weight: .light))
+            }
+            .foregroundColor(TE.red)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(TE.red.opacity(0.3), lineWidth: 1)
+            )
+        }
+        .buttonStyle(TEButtonStyle())
     }
 }
 
-// MARK: - Selection Stat Box
-struct SelectionStatBox: View {
+// MARK: - TE Selection Stat
+struct TESelectionStat: View {
     let value: Int
     let label: String
-    let color: Color
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             Text("\(value)")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(color)
+                .font(TE.mono(22, weight: .medium))
+                .foregroundColor(TE.text)
 
             Text(label)
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundColor(.white.opacity(0.4))
-                .kerning(1)
+                .font(TE.font(11, weight: .regular))
+                .foregroundColor(TE.textSecondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                )
-        )
+        .padding(.vertical, 20)
     }
 }
 
-// MARK: - Step Row
-struct StepRow: View {
+// MARK: - TE Step Row
+struct TEStepRow: View {
     let number: Int
     let text: String
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             Text("\(number)")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(.black)
-                .frame(width: 24, height: 24)
-                .background(Color.yellow)
-                .clipShape(Circle())
+                .font(TE.mono(12, weight: .medium))
+                .foregroundColor(TE.textSecondary)
+                .frame(width: 20, height: 20)
+                .overlay(
+                    Circle()
+                        .stroke(TE.border, lineWidth: 1)
+                )
 
             Text(text)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.white.opacity(0.7))
+                .font(TE.font(14, weight: .regular))
+                .foregroundColor(TE.text)
         }
     }
 }
