@@ -4,13 +4,13 @@ import FamilyControls
 @main
 struct FocusAppApp: App {
     @StateObject private var blockingStateManager = BlockingStateManager()
-    @StateObject private var appBlockingManager = AppBlockingManager()
+    @StateObject private var profileManager = ProfileManager()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(blockingStateManager)
-                .environmentObject(appBlockingManager)
+                .environmentObject(profileManager)
                 .onAppear {
                     requestScreenTimeAuthorization()
                 }

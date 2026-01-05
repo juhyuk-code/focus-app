@@ -15,6 +15,8 @@
 		A1000006 /* BlockingStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000016 /* BlockingStateManager.swift */; };
 		A1000030 /* AppSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000017 /* AppSelectionView.swift */; };
 		A1000031 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000018 /* SettingsView.swift */; };
+		A1000032 /* Profile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000033 /* Profile.swift */; };
+		A1000034 /* ProfileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000035 /* ProfileManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +31,8 @@
 		A1000018 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A1000019 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1000020 /* FocusApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusApp.entitlements; sourceTree = "<group>"; };
+		A1000033 /* Profile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Profile.swift; sourceTree = "<group>"; };
+		A1000035 /* ProfileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +67,7 @@
 			children = (
 				A1000011 /* FocusAppApp.swift */,
 				A1000012 /* ContentView.swift */,
+				A1000036 /* Models */,
 				A1000022 /* Managers */,
 				A1000023 /* Views */,
 				A1000013 /* Assets.xcassets */,
@@ -78,8 +83,17 @@
 				A1000014 /* AppBlockingManager.swift */,
 				A1000015 /* NFCManager.swift */,
 				A1000016 /* BlockingStateManager.swift */,
+				A1000035 /* ProfileManager.swift */,
 			);
 			path = Managers;
+			sourceTree = "<group>";
+		};
+		A1000036 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A1000033 /* Profile.swift */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 		A1000023 /* Views */ = {
@@ -167,6 +181,8 @@
 				A1000006 /* BlockingStateManager.swift in Sources */,
 				A1000030 /* AppSelectionView.swift in Sources */,
 				A1000031 /* SettingsView.swift in Sources */,
+				A1000032 /* Profile.swift in Sources */,
+				A1000034 /* ProfileManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

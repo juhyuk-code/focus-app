@@ -24,60 +24,74 @@ struct TE {
 }
 
 struct ContentView: View {
+    @EnvironmentObject var profileManager: ProfileManager
     @EnvironmentObject var blockingStateManager: BlockingStateManager
-    @EnvironmentObject var appBlockingManager: AppBlockingManager
     @StateObject private var nfcManager = NFCManager()
 
-    @State private var showingAppSelection = false
-    @State private var showingSettings = false
+    @State private var selectedProfile: Profile?
+    @State private var showingNFCScan = false
+    @State private var showingProfileEditor = false
+    @State private var profileToEdit: Profile?
+    @State private var showingNewProfile = false
+    @State private var editMode: EditMode = .inactive
 
     var body: some View {
         ZStack {
-            // Clean background
             TE.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Header
                 header
                     .padding(.top, 16)
                     .padding(.horizontal, 24)
 
+                // Status bar
+                if profileManager.isBlocking, let active = profileManager.activeProfile {
+                    activeStatusBar(profile: active)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 24)
+                }
+
+                // Profile list
+                profileList
+                    .padding(.top, 24)
+
                 Spacer()
 
-                // Main Status Display
-                statusDisplay
-
-                Spacer()
-
-                // NFC Button
-                nfcButton
-
-                Spacer()
-
-                // Stats Grid
-                statsGrid
+                // Add profile button
+                addProfileButton
                     .padding(.horizontal, 24)
-
-                // Bottom Action
-                bottomAction
-                    .padding(.horizontal, 24)
-                    .padding(.top, 32)
                     .padding(.bottom, 40)
             }
         }
         .preferredColorScheme(.light)
-        .sheet(isPresented: $showingAppSelection) {
-            AppSelectionView()
-                .environmentObject(appBlockingManager)
+        .sheet(isPresented: $showingNFCScan) {
+            NFCScanModal(profile: selectedProfile, nfcManager: nfcManager) {
+                // On successful scan
+                if let profile = selectedProfile {
+                    if profileManager.isBlocking {
+                        profileManager.deactivateProfile()
+                        blockingStateManager.setBlocking(false)
+                    } else {
+                        profileManager.activateProfile(profile)
+                        blockingStateManager.setBlocking(true)
+                    }
+                }
+                showingNFCScan = false
+            }
         }
-        .sheet(isPresented: $showingSettings) {
-            SettingsView()
-                .environmentObject(blockingStateManager)
-                .environmentObject(appBlockingManager)
+        .sheet(isPresented: $showingProfileEditor) {
+            if let profile = profileToEdit {
+                ProfileEditorView(profile: profile, isNew: false)
+                    .environmentObject(profileManager)
+            }
+        }
+        .sheet(isPresented: $showingNewProfile) {
+            ProfileEditorView(profile: Profile(name: "", order: profileManager.profiles.count), isNew: true)
+                .environmentObject(profileManager)
         }
         .onReceive(nfcManager.$lastScannedTag) { tag in
-            if tag != nil {
-                toggleBlocking()
+            if tag != nil && showingNFCScan {
+                // NFC scanned successfully - the modal will handle the callback
             }
         }
     }
@@ -99,8 +113,8 @@ struct ContentView: View {
 
             Spacer()
 
-            Button(action: { showingSettings = true }) {
-                Text("settings")
+            Button(action: { editMode = editMode == .active ? .inactive : .active }) {
+                Text(editMode == .active ? "done" : "edit")
                     .font(TE.font(13, weight: .medium))
                     .foregroundColor(TE.textSecondary)
                     .padding(.horizontal, 16)
@@ -113,120 +127,86 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Status Display
-    private var statusDisplay: some View {
-        VStack(spacing: 24) {
-            // Status indicator circle
-            ZStack {
-                Circle()
-                    .stroke(TE.border, lineWidth: 1)
-                    .frame(width: 140, height: 140)
-
-                Circle()
-                    .fill(blockingStateManager.isBlocking ? TE.orange : TE.surface)
-                    .frame(width: 120, height: 120)
-                    .overlay(
-                        Circle()
-                            .stroke(blockingStateManager.isBlocking ? TE.orange : TE.border, lineWidth: 1)
-                    )
-
-                VStack(spacing: 4) {
-                    Text(blockingStateManager.isBlocking ? "on" : "off")
-                        .font(TE.mono(28, weight: .medium))
-                        .foregroundColor(blockingStateManager.isBlocking ? .white : TE.text)
-                }
-            }
-
-            // Status text
-            VStack(spacing: 8) {
-                Text(blockingStateManager.isBlocking ? "focus mode active" : "apps unlocked")
-                    .font(TE.font(16, weight: .medium))
-                    .foregroundColor(TE.text)
-
-                if blockingStateManager.isBlocking {
-                    Text(blockingStateManager.formattedBlockingDuration)
-                        .font(TE.mono(14, weight: .regular))
-                        .foregroundColor(TE.orange)
-                } else {
-                    Text("tap nfc to block apps")
-                        .font(TE.font(14, weight: .regular))
-                        .foregroundColor(TE.textSecondary)
-                }
-            }
-        }
-    }
-
-    // MARK: - NFC Button
-    private var nfcButton: some View {
-        Button(action: { nfcManager.startScanning() }) {
-            VStack(spacing: 16) {
-                // NFC Icon - minimal line art style
-                ZStack {
-                    // Outer ring
-                    Circle()
-                        .stroke(TE.border, lineWidth: 1)
-                        .frame(width: 100, height: 100)
-
-                    // Inner ring
-                    Circle()
-                        .stroke(TE.text.opacity(0.2), lineWidth: 1)
-                        .frame(width: 70, height: 70)
-
-                    // Center dot
-                    Circle()
-                        .fill(TE.orange)
-                        .frame(width: 40, height: 40)
-
-                    // NFC waves
-                    ForEach(0..<3, id: \.self) { i in
-                        Arc(startAngle: .degrees(-30), endAngle: .degrees(30))
-                            .stroke(TE.text, lineWidth: 1.5)
-                            .frame(width: CGFloat(55 + i * 15), height: CGFloat(55 + i * 15))
-                    }
-                }
-
-                Text("scan nfc")
-                    .font(TE.font(13, weight: .medium))
-                    .foregroundColor(TE.textSecondary)
-            }
-        }
-        .buttonStyle(TEButtonStyle())
-    }
-
-    // MARK: - Stats Grid
-    private var statsGrid: some View {
+    // MARK: - Active Status Bar
+    private func activeStatusBar(profile: Profile) -> some View {
         HStack(spacing: 12) {
-            TEStatBox(
-                label: "apps",
-                value: appBlockingManager.selectedApps.applicationTokens.count
-            )
+            Circle()
+                .fill(TE.orange)
+                .frame(width: 8, height: 8)
 
-            TEStatBox(
-                label: "categories",
-                value: appBlockingManager.selectedApps.categoryTokens.count
-            )
+            Text("blocking: \(profile.name)")
+                .font(TE.font(13, weight: .medium))
+                .foregroundColor(TE.text)
 
-            TEStatBox(
-                label: "websites",
-                value: appBlockingManager.selectedApps.webDomainTokens.count
-            )
+            Spacer()
+
+            Text(blockingStateManager.formattedBlockingDuration)
+                .font(TE.mono(13, weight: .regular))
+                .foregroundColor(TE.orange)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(TE.surface)
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(TE.orange, lineWidth: 1)
+        )
     }
 
-    // MARK: - Bottom Action
-    private var bottomAction: some View {
-        Button(action: { showingAppSelection = true }) {
+    // MARK: - Profile List
+    private var profileList: some View {
+        List {
+            ForEach(profileManager.profiles) { profile in
+                ProfileRow(
+                    profile: profile,
+                    isActive: profileManager.activeProfile?.id == profile.id,
+                    onTap: {
+                        selectedProfile = profile
+                        showingNFCScan = true
+                    }
+                )
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 6, leading: 24, bottom: 6, trailing: 24))
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    if !profile.isDefault {
+                        Button(role: .destructive) {
+                            profileManager.deleteProfile(profile)
+                        } label: {
+                            Label("delete", systemImage: "trash")
+                        }
+                    }
+
+                    Button {
+                        profileToEdit = profile
+                        showingProfileEditor = true
+                    } label: {
+                        Label("edit", systemImage: "pencil")
+                    }
+                    .tint(TE.orange)
+                }
+            }
+            .onMove { source, destination in
+                profileManager.moveProfile(from: source, to: destination)
+            }
+        }
+        .listStyle(.plain)
+        .environment(\.editMode, $editMode)
+        .scrollContentBackground(.hidden)
+    }
+
+    // MARK: - Add Profile Button
+    private var addProfileButton: some View {
+        Button(action: { showingNewProfile = true }) {
             HStack {
-                Text("select apps to block")
-                    .font(TE.font(15, weight: .medium))
-
-                Spacer()
-
-                Image(systemName: "arrow.right")
+                Image(systemName: "plus")
                     .font(.system(size: 14, weight: .medium))
+
+                Text("new profile")
+                    .font(TE.font(15, weight: .medium))
             }
             .foregroundColor(TE.text)
-            .padding(.horizontal, 20)
+            .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background(TE.surface)
             .overlay(
@@ -235,24 +215,340 @@ struct ContentView: View {
             )
         }
         .buttonStyle(TEButtonStyle())
-        .disabled(blockingStateManager.isBlocking)
-        .opacity(blockingStateManager.isBlocking ? 0.4 : 1)
+    }
+}
+
+// MARK: - Profile Row
+struct ProfileRow: View {
+    let profile: Profile
+    let isActive: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 16) {
+                // Icon
+                ZStack {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(isActive ? TE.orange : TE.surface)
+                        .frame(width: 44, height: 44)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4)
+                                .stroke(isActive ? TE.orange : TE.border, lineWidth: 1)
+                        )
+
+                    Image(systemName: profile.icon)
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(isActive ? .white : TE.text)
+                }
+
+                // Name and info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(profile.name)
+                        .font(TE.font(15, weight: .medium))
+                        .foregroundColor(TE.text)
+
+                    Text(profileSubtitle)
+                        .font(TE.font(12, weight: .regular))
+                        .foregroundColor(TE.textSecondary)
+                }
+
+                Spacer()
+
+                // Arrow or active indicator
+                if isActive {
+                    Text("active")
+                        .font(TE.font(11, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(TE.orange)
+                        .cornerRadius(2)
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(TE.textSecondary)
+                }
+            }
+            .padding(16)
+            .background(TE.surface)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(isActive ? TE.orange : TE.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(TEButtonStyle())
     }
 
-    // MARK: - Actions
-    private func toggleBlocking() {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            if blockingStateManager.isBlocking {
-                appBlockingManager.unblockApps()
-                blockingStateManager.setBlocking(false)
-            } else {
-                appBlockingManager.blockApps()
-                blockingStateManager.setBlocking(true)
+    private var profileSubtitle: String {
+        let appCount = profile.selectedApps.applicationTokens.count
+        let catCount = profile.selectedApps.categoryTokens.count
+
+        if profile.isDefault && appCount == 0 && catCount == 0 {
+            switch profile.name {
+            case "highest screen time":
+                return "top 10 most used apps"
+            case "are you not entertained":
+                return "entertainment & social media"
+            case "monk mode":
+                return "everything except essentials"
+            default:
+                return "tap to configure"
             }
         }
 
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.impactOccurred()
+        if appCount == 0 && catCount == 0 {
+            return "no apps selected"
+        }
+
+        var parts: [String] = []
+        if appCount > 0 { parts.append("\(appCount) apps") }
+        if catCount > 0 { parts.append("\(catCount) categories") }
+        return parts.joined(separator: ", ")
+    }
+}
+
+// MARK: - NFC Scan Modal
+struct NFCScanModal: View {
+    let profile: Profile?
+    @ObservedObject var nfcManager: NFCManager
+    let onSuccess: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var isScanning = false
+
+    var body: some View {
+        ZStack {
+            TE.background.ignoresSafeArea()
+
+            VStack(spacing: 32) {
+                Spacer()
+
+                // NFC Icon
+                ZStack {
+                    Circle()
+                        .stroke(TE.border, lineWidth: 1)
+                        .frame(width: 140, height: 140)
+
+                    Circle()
+                        .stroke(TE.text.opacity(0.2), lineWidth: 1)
+                        .frame(width: 100, height: 100)
+
+                    Circle()
+                        .fill(TE.orange)
+                        .frame(width: 60, height: 60)
+
+                    // NFC waves
+                    ForEach(0..<3, id: \.self) { i in
+                        Arc(startAngle: .degrees(-30), endAngle: .degrees(30))
+                            .stroke(TE.text, lineWidth: 1.5)
+                            .frame(width: CGFloat(75 + i * 20), height: CGFloat(75 + i * 20))
+                            .opacity(isScanning ? 1 : 0.3)
+                            .animation(
+                                .easeInOut(duration: 0.6)
+                                .repeatForever()
+                                .delay(Double(i) * 0.2),
+                                value: isScanning
+                            )
+                    }
+                }
+
+                VStack(spacing: 12) {
+                    if let profile = profile {
+                        Text(profile.name)
+                            .font(TE.font(20, weight: .medium))
+                            .foregroundColor(TE.text)
+                    }
+
+                    Text(isScanning ? "hold near nfc tag" : "tap to scan")
+                        .font(TE.font(14, weight: .regular))
+                        .foregroundColor(TE.textSecondary)
+                }
+
+                Spacer()
+
+                // Scan button
+                Button(action: startScan) {
+                    Text(isScanning ? "scanning..." : "scan nfc")
+                        .font(TE.font(15, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(TE.orange)
+                        .cornerRadius(4)
+                }
+                .buttonStyle(TEButtonStyle())
+                .disabled(isScanning)
+                .padding(.horizontal, 24)
+
+                // Cancel button
+                Button(action: { dismiss() }) {
+                    Text("cancel")
+                        .font(TE.font(15, weight: .medium))
+                        .foregroundColor(TE.textSecondary)
+                }
+                .padding(.bottom, 40)
+            }
+        }
+        .onReceive(nfcManager.$lastScannedTag) { tag in
+            if tag != nil && isScanning {
+                isScanning = false
+                onSuccess()
+            }
+        }
+    }
+
+    private func startScan() {
+        isScanning = true
+        nfcManager.startScanning()
+    }
+}
+
+// MARK: - Profile Editor View
+struct ProfileEditorView: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var profileManager: ProfileManager
+
+    @State var profile: Profile
+    let isNew: Bool
+
+    @State private var showingAppSelection = false
+
+    var body: some View {
+        NavigationView {
+            ZStack {
+                TE.background.ignoresSafeArea()
+
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Name field
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("name")
+                                .font(TE.font(12, weight: .medium))
+                                .foregroundColor(TE.textSecondary)
+
+                            TextField("profile name", text: $profile.name)
+                                .font(TE.font(16, weight: .regular))
+                                .foregroundColor(TE.text)
+                                .padding(16)
+                                .background(TE.surface)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .stroke(TE.border, lineWidth: 1)
+                                )
+                                .textInputAutocapitalization(.never)
+                        }
+
+                        // Icon selector
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("icon")
+                                .font(TE.font(12, weight: .medium))
+                                .foregroundColor(TE.textSecondary)
+
+                            IconPicker(selectedIcon: $profile.icon)
+                        }
+
+                        // App selection
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("apps to block")
+                                .font(TE.font(12, weight: .medium))
+                                .foregroundColor(TE.textSecondary)
+
+                            Button(action: { showingAppSelection = true }) {
+                                HStack {
+                                    Text(appSelectionText)
+                                        .font(TE.font(15, weight: .regular))
+                                        .foregroundColor(TE.text)
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(TE.textSecondary)
+                                }
+                                .padding(16)
+                                .background(TE.surface)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .stroke(TE.border, lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(TEButtonStyle())
+                        }
+
+                        Spacer()
+                    }
+                    .padding(24)
+                }
+            }
+            .navigationTitle(isNew ? "new profile" : "edit profile")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("cancel") { dismiss() }
+                        .foregroundColor(TE.textSecondary)
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("save") {
+                        saveProfile()
+                        dismiss()
+                    }
+                    .foregroundColor(TE.orange)
+                    .disabled(profile.name.isEmpty)
+                }
+            }
+            .familyActivityPicker(isPresented: $showingAppSelection, selection: $profile.selectedApps)
+        }
+    }
+
+    private var appSelectionText: String {
+        let count = profile.selectedApps.applicationTokens.count +
+                    profile.selectedApps.categoryTokens.count
+        return count == 0 ? "select apps" : "\(count) items selected"
+    }
+
+    private func saveProfile() {
+        if isNew {
+            profileManager.addProfile(profile)
+        } else {
+            profileManager.updateProfile(profile)
+        }
+    }
+}
+
+// MARK: - Icon Picker
+struct IconPicker: View {
+    @Binding var selectedIcon: String
+
+    let icons = [
+        "app.badge", "moon.fill", "tv.fill", "chart.bar.fill",
+        "gamecontroller.fill", "bubble.left.fill", "camera.fill", "cart.fill",
+        "book.fill", "music.note", "film.fill", "newspaper.fill",
+        "heart.fill", "star.fill", "bolt.fill", "leaf.fill"
+    ]
+
+    var body: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 8), spacing: 12) {
+            ForEach(icons, id: \.self) { icon in
+                Button(action: { selectedIcon = icon }) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(selectedIcon == icon ? TE.orange : TE.surface)
+                            .frame(height: 44)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(selectedIcon == icon ? TE.orange : TE.border, lineWidth: 1)
+                            )
+
+                        Image(systemName: icon)
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(selectedIcon == icon ? .white : TE.text)
+                    }
+                }
+                .buttonStyle(TEButtonStyle())
+            }
+        }
     }
 }
 
@@ -267,31 +563,6 @@ struct Arc: Shape {
         let radius = min(rect.width, rect.height) / 2
         path.addArc(center: center, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: false)
         return path
-    }
-}
-
-// MARK: - TE Stat Box
-struct TEStatBox: View {
-    let label: String
-    let value: Int
-
-    var body: some View {
-        VStack(spacing: 8) {
-            Text("\(value)")
-                .font(TE.mono(24, weight: .medium))
-                .foregroundColor(TE.text)
-
-            Text(label)
-                .font(TE.font(11, weight: .regular))
-                .foregroundColor(TE.textSecondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
-        .background(TE.surface)
-        .overlay(
-            RoundedRectangle(cornerRadius: 4)
-                .stroke(TE.border, lineWidth: 1)
-        )
     }
 }
 
@@ -333,6 +604,6 @@ extension Color {
 
 #Preview {
     ContentView()
+        .environmentObject(ProfileManager())
         .environmentObject(BlockingStateManager())
-        .environmentObject(AppBlockingManager())
 }
