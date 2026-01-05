@@ -164,7 +164,11 @@ struct ContentView: View {
     // MARK: - NFC Button
     private var nfcButton: some View {
         Button(action: {
-            playNFCButtonHaptic()
+            // Haptic feedback - pronounced but not too long
+            let impact = UIImpactFeedbackGenerator(style: .heavy)
+            impact.prepare()
+            impact.impactOccurred(intensity: 1.0)
+
             nfcManager.startScanning()
         }) {
             VStack(spacing: 16) {
