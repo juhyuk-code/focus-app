@@ -1,5 +1,6 @@
 import SwiftUI
 import FamilyControls
+import CoreHaptics
 
 // MARK: - Teenage Engineering Design System
 struct TE {
@@ -30,6 +31,7 @@ struct ContentView: View {
 
     @State private var showingAppSelection = false
     @State private var showingSettings = false
+    @State private var hapticEngine: CHHapticEngine?
 
     var body: some View {
         ZStack {
@@ -79,6 +81,9 @@ struct ContentView: View {
             if tag != nil {
                 toggleBlocking()
             }
+        }
+        .onAppear {
+            prepareHaptics()
         }
     }
 
@@ -158,7 +163,10 @@ struct ContentView: View {
 
     // MARK: - NFC Button
     private var nfcButton: some View {
-        Button(action: { nfcManager.startScanning() }) {
+        Button(action: {
+            playNFCButtonHaptic()
+            nfcManager.startScanning()
+        }) {
             VStack(spacing: 16) {
                 // NFC Icon - minimal line art style
                 ZStack {
@@ -253,6 +261,72 @@ struct ContentView: View {
 
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
+    }
+
+    // MARK: - Haptics
+    private func prepareHaptics() {
+        guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
+
+        do {
+            hapticEngine = try CHHapticEngine()
+            try hapticEngine?.start()
+
+            // Handle engine reset
+            hapticEngine?.resetHandler = { [self] in
+                do {
+                    try hapticEngine?.start()
+                } catch {
+                    print("Failed to restart haptic engine: \(error)")
+                }
+            }
+        } catch {
+            print("Failed to create haptic engine: \(error)")
+        }
+    }
+
+    private func playNFCButtonHaptic() {
+        guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else {
+            // Fallback to simple haptic
+            let generator = UIImpactFeedbackGenerator(style: .medium)
+            generator.impactOccurred()
+            return
+        }
+
+        // Create a pronounced but not too long haptic pattern
+        // Sharp initial hit + brief sustain for that "meaty" feel
+        var events: [CHHapticEvent] = []
+
+        // Initial sharp transient - gives immediate tactile response
+        let sharpness = CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.7)
+        let intensity = CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.9)
+        let transient = CHHapticEvent(
+            eventType: .hapticTransient,
+            parameters: [intensity, sharpness],
+            relativeTime: 0
+        )
+        events.append(transient)
+
+        // Brief continuous sustain - extends the feel without being too long
+        let sustainIntensity = CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.6)
+        let sustainSharpness = CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.4)
+        let continuous = CHHapticEvent(
+            eventType: .hapticContinuous,
+            parameters: [sustainIntensity, sustainSharpness],
+            relativeTime: 0.02,
+            duration: 0.12
+        )
+        events.append(continuous)
+
+        do {
+            let pattern = try CHHapticPattern(events: events, parameters: [])
+            let player = try hapticEngine?.makePlayer(with: pattern)
+            try player?.start(atTime: 0)
+        } catch {
+            print("Failed to play haptic: \(error)")
+            // Fallback
+            let generator = UIImpactFeedbackGenerator(style: .medium)
+            generator.impactOccurred()
+        }
     }
 }
 
