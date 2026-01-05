@@ -292,6 +292,27 @@ struct ContentView: View {
             return
         }
 
+        // Create engine if it doesn't exist
+        if hapticEngine == nil {
+            do {
+                hapticEngine = try CHHapticEngine()
+            } catch {
+                let generator = UIImpactFeedbackGenerator(style: .medium)
+                generator.impactOccurred()
+                return
+            }
+        }
+
+        // Ensure engine is started (it may have stopped)
+        do {
+            try hapticEngine?.start()
+        } catch {
+            // Engine failed to start, use fallback
+            let generator = UIImpactFeedbackGenerator(style: .medium)
+            generator.impactOccurred()
+            return
+        }
+
         // Create a pronounced but not too long haptic pattern
         // Sharp initial hit + brief sustain for that "meaty" feel
         var events: [CHHapticEvent] = []
@@ -320,7 +341,7 @@ struct ContentView: View {
         do {
             let pattern = try CHHapticPattern(events: events, parameters: [])
             let player = try hapticEngine?.makePlayer(with: pattern)
-            try player?.start(atTime: 0)
+            try player?.start(atTime: CHHapticTimeImmediate)
         } catch {
             print("Failed to play haptic: \(error)")
             // Fallback
