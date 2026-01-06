@@ -17,6 +17,7 @@
 		A1000031 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000018 /* SettingsView.swift */; };
 		A1000032 /* Profile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000033 /* Profile.swift */; };
 		A1000034 /* ProfileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000035 /* ProfileManager.swift */; };
+		A1000037 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000038 /* OnboardingView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +34,7 @@
 		A1000020 /* FocusApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusApp.entitlements; sourceTree = "<group>"; };
 		A1000033 /* Profile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Profile.swift; sourceTree = "<group>"; };
 		A1000035 /* ProfileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileManager.swift; sourceTree = "<group>"; };
+		A1000038 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,6 +103,7 @@
 			children = (
 				A1000017 /* AppSelectionView.swift */,
 				A1000018 /* SettingsView.swift */,
+				A1000038 /* OnboardingView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -183,6 +186,7 @@
 				A1000031 /* SettingsView.swift in Sources */,
 				A1000032 /* Profile.swift in Sources */,
 				A1000034 /* ProfileManager.swift in Sources */,
+				A1000037 /* OnboardingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -8,12 +8,18 @@ struct FocusAppApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(blockingStateManager)
-                .environmentObject(profileManager)
-                .onAppear {
-                    requestScreenTimeAuthorization()
+            Group {
+                if profileManager.hasCompletedOnboarding {
+                    ContentView()
+                } else {
+                    OnboardingView()
                 }
+            }
+            .environmentObject(blockingStateManager)
+            .environmentObject(profileManager)
+            .onAppear {
+                requestScreenTimeAuthorization()
+            }
         }
     }
 

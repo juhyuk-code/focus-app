@@ -6,14 +6,27 @@ import DeviceActivity
 class ProfileManager: ObservableObject {
     @Published var profiles: [Profile] = []
     @Published var activeProfile: Profile?
+    @Published var hasCompletedOnboarding: Bool = false
 
     private let userDefaults = UserDefaults.standard
     private let profilesKey = "savedProfiles"
+    private let onboardingKey = "hasCompletedOnboarding"
     private let store = ManagedSettingsStore()
 
     init() {
+        loadOnboardingState()
         loadProfiles()
-        setupDefaultProfilesIfNeeded()
+    }
+
+    // MARK: - Onboarding
+
+    private func loadOnboardingState() {
+        hasCompletedOnboarding = userDefaults.bool(forKey: onboardingKey)
+    }
+
+    func completeOnboarding() {
+        hasCompletedOnboarding = true
+        userDefaults.set(true, forKey: onboardingKey)
     }
 
     // MARK: - CRUD Operations
@@ -89,26 +102,4 @@ class ProfileManager: ObservableObject {
         }
     }
 
-    // MARK: - Default Profiles
-
-    private func setupDefaultProfilesIfNeeded() {
-        let hasDefaults = profiles.contains { $0.isDefault }
-        guard !hasDefaults else { return }
-
-        // Add default profiles
-        profiles.insert(Profile.highestScreenTime, at: 0)
-        profiles.insert(Profile.entertainment, at: 1)
-        profiles.insert(Profile.monkMode, at: 2)
-        reorderProfiles()
-        saveProfiles()
-    }
-
-    // MARK: - Screen Time Data (for "highest screen time" profile)
-
-    func updateHighestScreenTimeProfile() {
-        // Note: Getting actual screen time data requires DeviceActivityReport
-        // which needs a Device Activity Report extension.
-        // For now, this is a placeholder that would need to be implemented
-        // with the actual Screen Time API data.
-    }
 }

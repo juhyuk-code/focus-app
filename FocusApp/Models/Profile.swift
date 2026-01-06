@@ -61,27 +61,3 @@ struct Profile: Identifiable, Codable, Equatable {
         lhs.id == rhs.id
     }
 }
-
-// MARK: - Default Profiles
-extension Profile {
-    static let highestScreenTime = Profile(
-        name: "highest screen time",
-        icon: "chart.bar.fill",
-        isDefault: true,
-        order: 0
-    )
-
-    static let entertainment = Profile(
-        name: "are you not entertained",
-        icon: "tv.fill",
-        isDefault: true,
-        order: 1
-    )
-
-    static let monkMode = Profile(
-        name: "monk mode",
-        icon: "moon.fill",
-        isDefault: true,
-        order: 2
-    )
-}
